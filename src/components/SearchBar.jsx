@@ -36,7 +36,7 @@ function SearchBar({ value, onChange, onSearch }) {
           value={localValue}
           onChange={handleChange}
           placeholder="Search by title or author..."
-          className="w-full pl-11 pr-4 py-3 bg-white border border-parchment-300 rounded-full text-sm text-parchment-900 placeholder:text-parchment-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors duration-150"
+          className="w-full pl-11 pr-4 py-3 bg-white border border-parchment-300 rounded-full text-base text-parchment-900 placeholder:text-parchment-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors duration-150"
         />
       </div>
     </div>

@@ -1,15 +1,15 @@
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Admin from './pages/Admin'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   )
 }
 

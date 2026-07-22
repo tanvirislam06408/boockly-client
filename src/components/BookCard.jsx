@@ -23,14 +23,16 @@ function BookCard({ book, onOpenDetails, onDownload }) {
         />
 
         {/* Download button — top-right overlay */}
-        <span
+        <button
+          type="button"
           onClick={handleDownload}
+          aria-label={`Download ${book.title}`}
           className="absolute top-2 right-2 p-2 rounded-lg bg-parchment-900/60 text-white
                      opacity-0 group-hover:opacity-100 transition-opacity duration-200
                      hover:bg-parchment-900/80 backdrop-blur-sm"
         >
           <Download size={15} />
-        </span>
+        </button>
 
         {/* Category badge */}
         <span className="absolute bottom-2 left-2 badge bg-parchment-100/90 backdrop-blur-sm">
@@ -44,14 +46,14 @@ function BookCard({ book, onOpenDetails, onDownload }) {
           {book.title}
         </h3>
 
-        <p className="text-parchment-600 text-xs truncate">
+        <p className="text-parchment-700 text-xs truncate">
           {book.author}
         </p>
 
         {/* Rating row */}
         <div className="flex items-center gap-1.5 pt-0.5">
           <RatingStars rating={book.rating} size={12} />
-          <span className="text-parchment-500 text-[11px]">
+          <span className="text-parchment-600 text-[11px]">
             ({book.totalRatings.toLocaleString()})
           </span>
         </div>
