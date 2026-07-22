@@ -36,8 +36,8 @@ function BookGrid({ books, loading, onOpenDetails, onDownload }) {
 
       {isEmpty && (
         <div className="text-center py-20">
-          <p className="font-display text-lg text-parchment-600 mb-1">No books found.</p>
-          <p className="text-sm text-parchment-500">Try a different search or category.</p>
+          <p className="font-display text-lg text-parchment-800 mb-1">No books found.</p>
+          <p className="text-sm text-parchment-600">Try a different search or category.</p>
         </div>
       )}
     </section>
