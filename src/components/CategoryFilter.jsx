@@ -1,4 +1,4 @@
-const CATEGORIES = ['All', 'Fiction', 'Self Development', 'Business', 'Science', 'Biography']
+const CATEGORIES = ['All', 'Fiction', 'Science', 'Technology', 'Non-Fiction']
 
 function CategoryFilter({ activeCategory, onSelect }) {
   return (
