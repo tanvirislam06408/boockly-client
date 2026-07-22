@@ -31,7 +31,7 @@ function AdminGate({ onUnlock }) {
               <Lock size={20} className="text-parchment-600" />
             </div>
             <h1 className="font-display text-xl font-semibold text-parchment-900 mb-1">Admin Access</h1>
-            <p className="text-sm text-parchment-500 mb-6">Enter your admin key to continue</p>
+            <p className="text-sm text-parchment-700 mb-6">Enter your admin key to continue</p>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <input

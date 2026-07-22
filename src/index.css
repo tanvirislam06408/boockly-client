@@ -78,6 +78,9 @@
   .book-card:active {
     @apply shadow-card-active translate-y-0;
   }
+  .book-card:focus-visible {
+    @apply outline-none ring-2 ring-brand-500/40 ring-offset-2 ring-offset-parchment-100;
+  }
 
   /* Primary button */
   .btn-primary {
@@ -107,6 +110,13 @@
   .badge {
     @apply inline-block px-2.5 py-0.5 text-xs font-medium
            bg-parchment-300/60 text-parchment-700 rounded-full;
+  }
+
+  /* Focus ring for keyboard navigation */
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .btn-ghost:focus-visible {
+    @apply outline-none ring-2 ring-brand-500/40 ring-offset-2 ring-offset-parchment-100;
   }
 }
 

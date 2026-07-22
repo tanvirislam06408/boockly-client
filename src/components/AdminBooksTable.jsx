@@ -86,7 +86,7 @@ function AdminBooksTable({ books, onEdit, onDelete }) {
             {sortedBooks.map((book) => (
               <tr key={book.id} className="border-b border-parchment-300/40 last:border-0 hover:bg-parchment-100/60 transition-colors">
                 <td className="py-3 px-6">
-                  <img src={book.coverImage} alt="" className="w-10 h-14 object-cover rounded shadow-sm" />
+                  <img src={book.coverImage} alt="" className="w-10 h-14 object-cover rounded shadow-sm" aria-hidden="true" />
                 </td>
                 <td className="py-3 px-6 text-sm font-medium text-parchment-900 max-w-[200px] truncate">{book.title}</td>
                 <td className="py-3 px-6 text-sm text-parchment-600">{book.author}</td>
@@ -142,10 +142,10 @@ function AdminBooksTable({ books, onEdit, onDelete }) {
       <div className="md:hidden space-y-3">
         {sortedBooks.map((book) => (
           <div key={book.id} className="bg-parchment-100/60 rounded-lg p-3 flex gap-3">
-            <img src={book.coverImage} alt="" className="w-14 h-20 object-cover rounded shadow-sm shrink-0" />
+            <img src={book.coverImage} alt="" className="w-14 h-20 object-cover rounded shadow-sm shrink-0" aria-hidden="true" />
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-medium text-parchment-900 truncate">{book.title}</h4>
-              <p className="text-xs text-parchment-600 truncate">{book.author}</p>
+              <p className="text-xs text-parchment-700 truncate">{book.author}</p>
               <div className="flex items-center gap-2 mt-1.5">
                 <span className="badge text-[10px]">{book.category}</span>
                 <span className="text-[10px] text-parchment-500">{book.rating} ★</span>

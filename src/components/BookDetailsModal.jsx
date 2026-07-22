@@ -135,7 +135,7 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
               <h2 className="font-display text-2xl font-bold text-parchment-900 leading-tight">
                 {book.title}
               </h2>
-              <p className="text-parchment-600 mt-1">{book.author}</p>
+              <p className="text-parchment-700 mt-1">{book.author}</p>
             </div>
 
             {/* Category */}
@@ -152,7 +152,7 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
               <span className="text-lg font-semibold text-parchment-900">
                 {book.rating}
               </span>
-              <span className="text-sm text-parchment-500">
+              <span className="text-sm text-parchment-600">
                 ({book.totalRatings.toLocaleString()} ratings)
               </span>
             </div>
