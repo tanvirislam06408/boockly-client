@@ -11,8 +11,18 @@ const INITIAL_FORM = {
   description: '',
 }
 
-function AdminUploadForm({ onSubmit }) {
-  const [form, setForm] = useState(INITIAL_FORM)
+function AdminUploadForm({ onSubmit, editingBook, onCancelEdit }) {
+  const [form, setForm] = useState(() => {
+    if (!editingBook) return INITIAL_FORM
+    const isCustom = !CATEGORIES.includes(editingBook.category)
+    return {
+      title: editingBook.title,
+      author: editingBook.author,
+      category: isCustom ? '__custom' : editingBook.category,
+      customCategory: isCustom ? editingBook.category : '',
+      description: editingBook.description || '',
+    }
+  })
   const [errors, setErrors] = useState({})
   const [coverFile, setCoverFile] = useState(null)
   const [coverPreview, setCoverPreview] = useState(null)
@@ -135,13 +145,21 @@ function AdminUploadForm({ onSubmit }) {
     await new Promise((r) => setTimeout(r, 1500))
 
     setIsSubmitting(false)
-    onSubmit?.(formData)
+    onSubmit?.(formData, editingBook?.id)
 
     // Reset form
     setForm(INITIAL_FORM)
     removeCover()
     removePdf()
     setErrors({})
+  }
+
+  function handleCancel() {
+    setForm(INITIAL_FORM)
+    removeCover()
+    removePdf()
+    setErrors({})
+    onCancelEdit?.()
   }
 
   const fieldClass = (field) =>
@@ -158,10 +176,23 @@ function AdminUploadForm({ onSubmit }) {
         <div className="p-2 rounded-lg bg-brand-500/10">
           <Upload size={18} className="text-brand-500" />
         </div>
-        <div>
-          <h2 className="font-display text-lg font-semibold text-parchment-900">Upload New Book</h2>
-          <p className="text-xs text-parchment-500">Add a book to the library collection</p>
+        <div className="flex-1">
+          <h2 className="font-display text-lg font-semibold text-parchment-900">
+            {editingBook ? 'Edit Book' : 'Upload New Book'}
+          </h2>
+          <p className="text-xs text-parchment-500">
+            {editingBook ? `Editing "${editingBook.title}"` : 'Add a book to the library collection'}
+          </p>
         </div>
+        {editingBook && (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="btn-ghost text-xs px-3 py-1.5"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -340,12 +371,12 @@ function AdminUploadForm({ onSubmit }) {
           {isSubmitting ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              Uploading...
+              {editingBook ? 'Updating...' : 'Uploading...'}
             </>
           ) : (
             <>
               <Upload size={16} />
-              Upload Book
+              {editingBook ? 'Update Book' : 'Upload Book'}
             </>
           )}
         </button>
