@@ -1,0 +1,111 @@
+/*
+ * ═══════════════════════════════════════════════════════
+ *  BOOKLY DESIGN SYSTEM — Boutique Digital Library
+ * ═══════════════════════════════════════════════════════
+ *
+ *  Aesthetic: Warm, literary, inviting — like a well-lit
+ *  independent bookstore. Not cold SaaS blue, not sterile
+ *  dashboard gray. Think aged paper, worn leather, and
+ *  dark wood shelves.
+ *
+ *  COLOR PALETTE
+ *  ─────────────
+ *  brand-500  #C47225  Primary — warm amber/copper
+ *  olive-500  #4F7558  Accent — deep sage green
+ *  parchment-100 #FBF7F0  Page background
+ *  parchment-200 #F5EDE3  Card surfaces
+ *  parchment-300 #E5D9CB  Borders / dividers
+ *  parchment-800 #6B5C4E  Secondary text
+ *  parchment-900 #2C1E10  Primary text
+ *
+ *  TYPOGRAPHY
+ *  ──────────
+ *  font-display  Playfair Display  Headings, book titles
+ *  font-body     Inter             Body text, UI labels
+ *
+ *  CARD STYLE
+ *  ──────────
+ *  bg-parchment-200, rounded-card (12px), shadow-card
+ *  Hover: shadow-card-hover, -translate-y-0.5
+ *  Active: shadow-card-active
+ *
+ *  BUTTONS
+ *  ───────
+ *  Primary:   bg-brand-500, text-white, rounded-lg, hover:bg-brand-600
+ *  Secondary: border-2 border-brand-500, text-brand-500, rounded-lg
+ *  Ghost:     text-parchment-800, hover:bg-parchment-200
+ *
+ *  SPACING RHYTHM
+ *  ──────────────
+ *  Page padding:     px-4 sm:px-6 lg:px-8
+ *  Section gap:      py-12 to py-16
+ *  Card padding:     p-5 to p-6
+ *  Component gap:    gap-4 to gap-6
+ *  Grid gap:         gap-6
+ *
+ *  SHADOW SCALE
+ *  ────────────
+ *  shadow-card        — resting state (subtle)
+ *  shadow-card-hover  — mouse-over (lifted)
+ *  shadow-card-active — click / focus (elevated)
+ * ═══════════════════════════════════════════════════════
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-parchment-100 text-parchment-900 font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Card — default resting state */
+  .book-card {
+    @apply bg-parchment-200 rounded-card shadow-card
+           border border-parchment-300/50
+           transition-all duration-200 ease-out;
+  }
+  .book-card:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+  }
+  .book-card:active {
+    @apply shadow-card-active translate-y-0;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-brand-500 text-white font-body font-medium
+           px-5 py-2.5 rounded-lg
+           hover:bg-brand-600 active:bg-brand-700
+           transition-colors duration-150;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply border-2 border-brand-500 text-brand-500 font-body font-medium
+           px-5 py-2.5 rounded-lg
+           hover:bg-brand-50 active:bg-brand-100
+           transition-colors duration-150;
+  }
+
+  /* Ghost / text button */
+  .btn-ghost {
+    @apply text-parchment-800 font-body font-medium
+           px-4 py-2 rounded-lg
+           hover:bg-parchment-200 active:bg-parchment-300
+           transition-colors duration-150;
+  }
+
+  /* Badge / tag */
+  .badge {
+    @apply inline-block px-2.5 py-0.5 text-xs font-medium
+           bg-parchment-300/60 text-parchment-700 rounded-full;
+  }
+}
