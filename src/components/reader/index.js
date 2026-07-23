@@ -1,4 +1,7 @@
 export { default as EpubReader } from './EpubReader'
+export { default as HtmlReader } from './HtmlReader'
+export { default as PdfViewer } from './PdfViewer'
+export { default as TextReader } from './TextReader'
 export { default as TableOfContents } from './TableOfContents'
 export { default as ReaderControls } from './ReaderControls'
 export { default as FontControls } from './FontControls'

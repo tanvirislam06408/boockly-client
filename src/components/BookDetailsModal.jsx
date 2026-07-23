@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Download, BookOpen } from 'lucide-react'
+import { X, Download, BookOpen, ExternalLink } from 'lucide-react'
 import RatingStars from './RatingStars'
+import { isReadableFormat } from '../services/api'
 
 function BookDetailsModal({ book, onClose, onRate }) {
   const [ratingState, setRatingState] = useState('idle') // idle | confirming | done
@@ -100,8 +101,19 @@ function BookDetailsModal({ book, onClose, onRate }) {
 
   const hasRating = book.rating > 0
   const hasDownload = !!book.downloadUrl
+  const canReadOnline = book.formats && isReadableFormat(book.formats)
 
-  // Determine download label from URL
+  // Determine format info for display
+  function getFormatInfo() {
+    if (!book.formats) return null
+    if (book.formats['text/html']) return { label: 'HTML', color: 'bg-olive-100 text-olive-700' }
+    if (book.formats['application/pdf']) return { label: 'PDF', color: 'bg-red-50 text-red-600' }
+    if (book.formats['text/plain; charset=utf-8'] || book.formats['text/plain'])
+      return { label: 'TXT', color: 'bg-parchment-200 text-parchment-600' }
+    if (book.formats['application/epub+zip']) return { label: 'EPUB', color: 'bg-blue-50 text-blue-600' }
+    return null
+  }
+
   function getDownloadLabel() {
     if (!book.downloadUrl) return 'No file available'
     if (book.downloadUrl.includes('.epub')) return 'Download EPUB'
@@ -109,6 +121,8 @@ function BookDetailsModal({ book, onClose, onRate }) {
     if (book.downloadUrl.includes('plain')) return 'Download TXT'
     return 'Download'
   }
+
+  const formatInfo = getFormatInfo()
 
   return (
     <div
@@ -165,8 +179,15 @@ function BookDetailsModal({ book, onClose, onRate }) {
               <p className="text-parchment-700 mt-1">{book.author}</p>
             </div>
 
-            {/* Category */}
-            <span className="badge">{book.category}</span>
+            {/* Category + Format badge */}
+            <div className="flex items-center gap-2">
+              <span className="badge">{book.category}</span>
+              {formatInfo && (
+                <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-full ${formatInfo.color}`}>
+                  {formatInfo.label}
+                </span>
+              )}
+            </div>
 
             {/* Description */}
             <p className="text-sm text-parchment-700 leading-relaxed">
@@ -212,38 +233,44 @@ function BookDetailsModal({ book, onClose, onRate }) {
               )}
             </div>
 
-            {/* Download button */}
-            {hasDownload ? (
-              <a
-                href={book.downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-2 text-center"
-              >
-                <Download size={16} />
-                {getDownloadLabel()}
-              </a>
-            ) : (
-              <button
-                disabled
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-2 opacity-50 cursor-not-allowed"
-              >
-                <Download size={16} />
-                No file available
-              </button>
-            )}
+            {/* ── Action Buttons ─────────────────────────────────── */}
+            <div className="space-y-2.5 pt-1">
+              {/* Read Online — show for readable formats (HTML, PDF, text) */}
+              {canReadOnline && (
+                <button
+                  onClick={handleReadBook}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-olive-500 hover:bg-olive-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  <BookOpen size={16} />
+                  Read Online
+                </button>
+              )}
 
-            {/* Read Book button - only show for EPUB files */}
-            {book.downloadUrl && book.downloadUrl.includes('.epub') && (
-              <button
-                onClick={handleReadBook}
-                className="w-full flex items-center justify-center gap-2 mt-3 px-4 py-2.5 bg-olive-500 hover:bg-olive-600 text-white rounded-lg transition-colors"
-              >
-                <BookOpen size={16} />
-                Read Book
-              </button>
-            )}
+              {/* Download — always show if download URL exists */}
+              {hasDownload && (
+                <a
+                  href={book.downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="btn-primary w-full flex items-center justify-center gap-2 text-center"
+                >
+                  <Download size={16} />
+                  {canReadOnline ? getDownloadLabel() : 'Download EPUB'}
+                </a>
+              )}
+
+              {/* No file available */}
+              {!hasDownload && (
+                <button
+                  disabled
+                  className="btn-primary w-full flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+                >
+                  <Download size={16} />
+                  No file available
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,11 +1,18 @@
 const STORAGE_KEY = 'boockly_reading_progress'
 
-export function saveReadingProgress(bookId, progress) {
+/**
+ * Save reading progress with book metadata.
+ * @param {string|number} bookId
+ * @param {object} progress - { href, location, percentage, scrollPosition, format }
+ * @param {object} [meta] - { title, author, coverImage, readFormat }
+ */
+export function saveReadingProgress(bookId, progress, meta = {}) {
   try {
     const allProgress = getAllReadingProgress()
     allProgress[bookId] = {
       ...progress,
-      timestamp: Date.now()
+      ...meta,
+      timestamp: Date.now(),
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allProgress))
   } catch (error) {
@@ -43,13 +50,16 @@ export function clearReadingProgress(bookId) {
   }
 }
 
+/**
+ * Get recently read books with metadata, sorted by most recent.
+ */
 export function getLastReadBooks(limit = 10) {
   try {
     const allProgress = getAllReadingProgress()
     return Object.entries(allProgress)
       .map(([bookId, progress]) => ({
         bookId,
-        ...progress
+        ...progress,
       }))
       .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
       .slice(0, limit)
@@ -57,4 +67,12 @@ export function getLastReadBooks(limit = 10) {
     console.error('Failed to get last read books:', error)
     return []
   }
+}
+
+/**
+ * Check if a book has been read before.
+ */
+export function hasReadingProgress(bookId) {
+  const progress = getReadingProgress(bookId)
+  return progress !== null
 }

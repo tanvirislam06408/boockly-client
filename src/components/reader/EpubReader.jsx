@@ -16,7 +16,7 @@ function EpubReader({ bookUrl, bookId, bookTitle, onClose }) {
   const [showControls, setShowControls] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [fontSize, setFontSize] = useState(100)
-  const [fontFamily, setFontFamily] = useState(' serif')
+  const [fontFamily, setFontFamily] = useState('serif')
   const [theme, setTheme] = useState('light')
   
   const viewerRef = useRef(null)
@@ -35,8 +35,33 @@ function EpubReader({ bookUrl, bookId, bookTitle, onClose }) {
         // Dynamic import of epubjs
         const ePub = (await import('epubjs')).default
 
-        const book = ePub(bookUrl)
+        // Use CORS proxy for external URLs to avoid CORS issues
+        let finalUrl = bookUrl
+        const isExternalUrl = bookUrl.startsWith('http') && !bookUrl.includes(window.location.hostname)
+        
+        if (isExternalUrl) {
+          // Try multiple CORS proxy services
+          const proxyServices = [
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(bookUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(bookUrl)}`,
+            `https://cors-anywhere.herokuapp.com/${bookUrl}`
+          ]
+          
+          // Try the first proxy service
+          finalUrl = proxyServices[0]
+          console.log('Using CORS proxy for external URL:', finalUrl)
+        }
+
+        const book = ePub(finalUrl)
         bookRef.current = book
+
+        // Wait for viewer to be ready
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        // Check if viewerRef is still valid
+        if (!viewerRef.current) {
+          throw new Error('Viewer element not found')
+        }
 
         const rendition = book.renderTo(viewerRef.current, {
           width: '100%',
@@ -62,11 +87,14 @@ function EpubReader({ bookUrl, bookId, bookTitle, onClose }) {
         rendition.themes.font(fontFamily)
 
         // Display the book
-        rendition.display()
+        await rendition.display()
 
         // Get table of contents
         book.loaded.navigation.then(({ navigation }) => {
           setToc(navigation.toc)
+        }).catch((err) => {
+          console.warn('Failed to load table of contents:', err)
+          // Continue even if TOC fails
         })
 
         // Handle page changes
@@ -102,8 +130,15 @@ function EpubReader({ bookUrl, bookId, bookTitle, onClose }) {
         }
 
       } catch (err) {
-        setError('Failed to initialize reader. Please try again.')
         console.error('Reader initialization error:', err)
+        
+        // Provide more helpful error message for CORS issues
+        let errorMessage = err.message || 'Unknown error'
+        if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('CORS')) {
+          errorMessage = 'Unable to load the book due to network restrictions. The book file might be hosted on a server that blocks direct access. Please try downloading the book instead.'
+        }
+        
+        setError(`Failed to initialize reader: ${errorMessage}. Please try again.`)
         setIsLoading(false)
       }
     }
@@ -292,21 +327,56 @@ function EpubReader({ bookUrl, bookId, bookTitle, onClose }) {
         {/* Reader viewport */}
         <div className="flex-1 relative">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+            <div className="absolute inset-0 flex items-center justify-center bg-parchment-50">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+                <p className="text-parchment-600">Loading book...</p>
+                {bookUrl && (
+                  <p className="text-xs text-parchment-400 mt-2 max-w-md truncate">
+                    {bookUrl}
+                  </p>
+                )}
+              </div>
             </div>
           )}
-          
+
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center p-8">
-                <p className="text-red-500 mb-4">{error}</p>
-                <button
-                  onClick={onClose}
-                  className="btn-primary"
-                >
-                  Go Back
-                </button>
+            <div className="absolute inset-0 flex items-center justify-center bg-parchment-50">
+              <div className="text-center p-8 max-w-md">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-red-500 mb-2 font-medium">Error Loading Book</p>
+                <p className="text-parchment-600 mb-6 text-sm">{error}</p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-parchment-200 text-parchment-700 rounded-lg hover:b {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-parchment-50">
+              <div className="text-center p-8 max-w-md">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-red-500 mb-2 font-medium">Error Loading Book</p>
+                <p className="text-parchment-600 mb-6 text-sm">{error}</p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-parchment-200 text-parchment-700 rounded-lg hover:bg-parchment-300 transition-colors"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="btn-primary"
+                  >
+                    Go Back
+                  </button>
+                </div>
               </div>
             </div>
           )}
