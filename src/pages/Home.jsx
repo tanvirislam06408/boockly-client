@@ -1,57 +1,88 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
 import CategoryFilter from '../components/CategoryFilter'
 import BookGrid from '../components/BookGrid'
 import BookDetailsModal from '../components/BookDetailsModal'
+import RecentlyRead from '../components/RecentlyRead'
 import Footer from '../components/Footer'
-import { mockBooks } from '../data/mockBooks'
+import { fetchBooks } from '../services/api'
+
+// Generate a stable mock rating per book ID for visual purposes (not persisted)
+function generateMockRating(bookId) {
+  const hash = ((bookId * 2654435761) >>> 0) % 1000
+  return {
+    rating: Math.round(((hash / 1000) * 4 + 1) * 10) / 10, // 1.0 – 5.0
+    totalRatings: (hash % 2000) + 50,
+  }
+}
 
 function Home() {
-  // Books state — structured to swap for an API call later
-  const [books, setBooks] = useState(mockBooks)
+  const [books, setBooks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
 
-  // Category state
+  // Category state — maps to Gutendex topic param
   const [activeCategory, setActiveCategory] = useState('All')
 
   // Modal state
   const [selectedBook, setSelectedBook] = useState(null)
 
-  // Filtered list
-  const filteredBooks = useMemo(() => {
-    let result = books
+  // Debounce timer ref
+  const debounceRef = useRef(null)
 
-    if (appliedSearch) {
-      const q = appliedSearch.toLowerCase()
-      result = result.filter(
-        (book) =>
-          book.title.toLowerCase().includes(q) ||
-          book.author.toLowerCase().includes(q)
-      )
+  // Fetch books from Gutendex
+  const doFetch = useCallback(async (search, page = 1) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchBooks({ search, page })
+      // Attach local mock ratings
+      const withRatings = data.results.map((book) => ({
+        ...book,
+        ...generateMockRating(book.id),
+      }))
+      setBooks(withRatings)
+    } catch (err) {
+      setError(err.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    if (activeCategory !== 'All') {
-      result = result.filter((book) => book.category === activeCategory)
-    }
+  // Initial fetch
+  useEffect(() => {
+    doFetch('')
+  }, [doFetch])
 
-    return result
-  }, [books, appliedSearch, activeCategory])
+  // Debounced search — refetch from API when search changes
+  useEffect(() => {
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      doFetch(appliedSearch)
+    }, 400)
+    return () => clearTimeout(debounceRef.current)
+  }, [appliedSearch, doFetch])
 
-  // Optimistic rating update
-  // newAverage = ((oldAverage * totalRatings) + newRating) / (totalRatings + 1)
+  // Category filter — Gutendex topic param
+  useEffect(() => {
+    const topic = activeCategory === 'All' ? '' : activeCategory.toLowerCase()
+    doFetch(topic || appliedSearch)
+  }, [activeCategory, doFetch, appliedSearch])
+
+  // Optimistic local rating update
   const handleRate = useCallback((bookId, ratingValue) => {
     setBooks((prev) =>
       prev.map((book) => {
         if (book.id !== bookId) return book
-
         const newTotalRatings = book.totalRatings + 1
         const newRating =
           (book.rating * book.totalRatings + ratingValue) / newTotalRatings
-
         return {
           ...book,
           rating: Math.round(newRating * 10) / 10,
@@ -60,7 +91,6 @@ function Home() {
       })
     )
 
-    // Update the selected book reference so the modal shows the new rating
     setSelectedBook((prev) => {
       if (!prev || prev.id !== bookId) return prev
       const newTotalRatings = prev.totalRatings + 1
@@ -72,11 +102,6 @@ function Home() {
         totalRatings: newTotalRatings,
       }
     })
-  }, [])
-
-  const handleDownload = useCallback((book) => {
-    // Placeholder — wire up real download later
-    console.log('Download:', book.title)
   }, [])
 
   return (
@@ -92,11 +117,31 @@ function Home() {
         onSelect={setActiveCategory}
       />
       <div className="flex-1">
-        <BookGrid
-          books={filteredBooks}
-          onOpenDetails={setSelectedBook}
-          onDownload={handleDownload}
-        />
+        <RecentlyRead />
+        {error && !loading ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mb-4">
+              <AlertTriangle size={22} className="text-red-400" />
+            </div>
+            <p className="font-display text-lg text-parchment-800 mb-1">
+              Couldn't load books
+            </p>
+            <p className="text-sm text-parchment-600 mb-5">{error}</p>
+            <button
+              onClick={() => doFetch(appliedSearch)}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <RefreshCw size={15} />
+              Try again
+            </button>
+          </div>
+        ) : (
+          <BookGrid
+            books={books}
+            loading={loading}
+            onOpenDetails={setSelectedBook}
+          />
+        )}
       </div>
       <Footer />
 
@@ -104,7 +149,6 @@ function Home() {
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
         onRate={handleRate}
-        onDownload={handleDownload}
       />
     </div>
   )

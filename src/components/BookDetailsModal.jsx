@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Download } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { X, Download, BookOpen } from 'lucide-react'
 import RatingStars from './RatingStars'
 
-function BookDetailsModal({ book, onClose, onRate, onDownload }) {
+function BookDetailsModal({ book, onClose, onRate }) {
   const [ratingState, setRatingState] = useState('idle') // idle | confirming | done
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
   const modalRef = useRef(null)
   const closeRef = useRef(null)
   const previousFocus = useRef(null)
+  const navigate = useNavigate()
 
   // Mount/unmount with enter transition
   useEffect(() => {
     if (book) {
       previousFocus.current = document.activeElement
       setMounted(true)
+      setRatingState('idle')
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setVisible(true))
       })
@@ -22,7 +25,6 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
       setVisible(false)
       const timer = setTimeout(() => {
         setMounted(false)
-        setRatingState('idle')
         previousFocus.current?.focus()
       }, 200)
       return () => clearTimeout(timer)
@@ -87,7 +89,26 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
     setTimeout(() => setRatingState('done'), 1500)
   }
 
+  function handleReadBook() {
+    if (book.downloadUrl) {
+      navigate(`/reader/${book.id}?url=${encodeURIComponent(book.downloadUrl)}&title=${encodeURIComponent(book.title)}`)
+      onClose()
+    }
+  }
+
   if (!mounted) return null
+
+  const hasRating = book.rating > 0
+  const hasDownload = !!book.downloadUrl
+
+  // Determine download label from URL
+  function getDownloadLabel() {
+    if (!book.downloadUrl) return 'No file available'
+    if (book.downloadUrl.includes('.epub')) return 'Download EPUB'
+    if (book.downloadUrl.includes('.pdf') || book.downloadUrl.includes('pdf')) return 'Download PDF'
+    if (book.downloadUrl.includes('plain')) return 'Download TXT'
+    return 'Download'
+  }
 
   return (
     <div
@@ -121,11 +142,17 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
         <div className="flex flex-col sm:flex-row gap-6 p-6">
           {/* Cover image — left column */}
           <div className="shrink-0 w-full sm:w-48">
-            <img
-              src={book.coverImage}
-              alt={`Cover of ${book.title}`}
-              className="w-full aspect-[2/3] object-cover rounded-lg shadow-card"
-            />
+            {book.coverImage ? (
+              <img
+                src={book.coverImage}
+                alt={`Cover of ${book.title}`}
+                className="w-full aspect-[2/3] object-cover rounded-lg shadow-card"
+              />
+            ) : (
+              <div className="w-full aspect-[2/3] bg-parchment-300/40 rounded-lg shadow-card flex items-center justify-center">
+                <span className="text-parchment-400 text-xs text-center px-4">{book.title}</span>
+              </div>
+            )}
           </div>
 
           {/* Details — right column */}
@@ -146,16 +173,18 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
               {book.description}
             </p>
 
-            {/* Average rating — large */}
-            <div className="flex items-center gap-3">
-              <RatingStars rating={book.rating} size={18} />
-              <span className="text-lg font-semibold text-parchment-900">
-                {book.rating}
-              </span>
-              <span className="text-sm text-parchment-600">
-                ({book.totalRatings.toLocaleString()} ratings)
-              </span>
-            </div>
+            {/* Average rating — only if rating exists */}
+            {hasRating && (
+              <div className="flex items-center gap-3">
+                <RatingStars rating={book.rating} size={18} />
+                <span className="text-lg font-semibold text-parchment-900">
+                  {book.rating}
+                </span>
+                <span className="text-sm text-parchment-600">
+                  ({book.totalRatings.toLocaleString()} ratings)
+                </span>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="border-t border-parchment-300/60" />
@@ -184,13 +213,37 @@ function BookDetailsModal({ book, onClose, onRate, onDownload }) {
             </div>
 
             {/* Download button */}
-            <button
-              onClick={() => onDownload?.(book)}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
-            >
-              <Download size={16} />
-              Download PDF
-            </button>
+            {hasDownload ? (
+              <a
+                href={book.downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="btn-primary w-full flex items-center justify-center gap-2 mt-2 text-center"
+              >
+                <Download size={16} />
+                {getDownloadLabel()}
+              </a>
+            ) : (
+              <button
+                disabled
+                className="btn-primary w-full flex items-center justify-center gap-2 mt-2 opacity-50 cursor-not-allowed"
+              >
+                <Download size={16} />
+                No file available
+              </button>
+            )}
+
+            {/* Read Book button - only show for EPUB files */}
+            {book.downloadUrl && book.downloadUrl.includes('.epub') && (
+              <button
+                onClick={handleReadBook}
+                className="w-full flex items-center justify-center gap-2 mt-3 px-4 py-2.5 bg-olive-500 hover:bg-olive-600 text-white rounded-lg transition-colors"
+              >
+                <BookOpen size={16} />
+                Read Book
+              </button>
+            )}
           </div>
         </div>
       </div>
