@@ -10,20 +10,20 @@ const BookCard = memo(function BookCard({ book, onOpenDetails }) {
     <button
       type="button"
       onClick={() => onOpenDetails?.(book)}
-      className="book-card text-left w-full group cursor-pointer"
+      className="book-card group flex h-full w-full cursor-pointer flex-col text-left"
     >
       {/* Cover image */}
-      <div className="relative aspect-[2/3] overflow-hidden rounded-t-card">
+      <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden rounded-t-card">
         {book.coverImage ? (
           <img
             src={book.coverImage}
             alt={`Cover of ${book.title}`}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-parchment-300/40 flex items-center justify-center">
-            <span className="text-parchment-400 text-xs text-center px-4">{book.title}</span>
+          <div className="flex h-full w-full items-center justify-center bg-parchment-300/40">
+            <span className="px-4 text-center text-xs text-parchment-400">{book.title}</span>
           </div>
         )}
 
@@ -45,37 +45,44 @@ const BookCard = memo(function BookCard({ book, onOpenDetails }) {
         ) : (
           <span
             aria-label="No file available"
-            className="absolute top-2 right-2 p-2 rounded-lg bg-parchment-900/30 text-parchment-400
-                       cursor-not-allowed opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            className="absolute top-2 right-2 cursor-not-allowed rounded-lg bg-parchment-900/30 p-2
+                       text-parchment-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
           >
             <Download size={15} />
           </span>
         )}
 
         {/* Category badge */}
-        <span className="absolute bottom-2 left-2 badge bg-parchment-100/90 backdrop-blur-sm">
+        <span className="badge absolute bottom-2 left-2 max-w-[80%] truncate bg-parchment-100/90 backdrop-blur-sm">
           {book.category}
         </span>
       </div>
 
-      {/* Content */}
-      <div className="p-3.5 space-y-1">
-        <h3 className="font-display font-semibold text-parchment-900 text-sm leading-snug line-clamp-2">
-          {book.title}
-        </h3>
+      {/* Content — flex-1 so it fills remaining card height, justify-between pins rating to the bottom */}
+      <div className="flex flex-1 flex-col justify-between gap-1.5 p-3.5">
+        <div className="space-y-1">
+          <h3 className="line-clamp-2 min-h-[2.5em] font-display text-sm font-semibold leading-snug text-parchment-900">
+            {book.title}
+          </h3>
 
-        <p className="text-parchment-700 text-xs truncate">
-          {book.author}
-        </p>
+          <p className="truncate text-xs text-parchment-700">
+            {book.author}
+          </p>
+        </div>
 
-        {hasRating && (
-          <div className="flex items-center gap-1.5 pt-0.5">
-            <RatingStars rating={book.rating} size={12} />
-            <span className="text-parchment-600 text-[11px]">
-              ({book.totalRatings.toLocaleString()})
-            </span>
-          </div>
-        )}
+        {/* Always reserves its row height, even with no rating yet, so cards stay aligned */}
+        <div className="flex h-[18px] items-center gap-1.5">
+          {hasRating ? (
+            <>
+              <RatingStars rating={book.rating} size={12} />
+              <span className="text-[11px] text-parchment-600">
+                ({book.totalRatings.toLocaleString()})
+              </span>
+            </>
+          ) : (
+            <span className="text-[11px] text-parchment-400">No ratings yet</span>
+          )}
+        </div>
       </div>
     </button>
   )

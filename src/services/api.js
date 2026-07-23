@@ -89,6 +89,23 @@ export async function fetchBooks({ search = '', page = 1, topic = '' } = {}) {
 }
 
 /**
+ * Fetch books from any Gutendex URL directly (used for the "next" URL).
+ * Returns the same shape as fetchBooks: { count, next, previous, results }.
+ */
+export async function fetchByUrl(url) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch books')
+  const data = await res.json()
+
+  return {
+    count: data.count,
+    next: data.next,
+    previous: data.previous,
+    results: data.results.map(mapBook),
+  }
+}
+
+/**
  * Fetch a single book by ID.
  */
 export async function fetchBookById(bookId) {

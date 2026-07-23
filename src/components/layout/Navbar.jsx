@@ -23,7 +23,7 @@ function Navbar() {
           >
             Home
           </Link>
-          <Link
+          {/* <Link
             to="/admin"
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 ${
               location.pathname === '/admin'
@@ -32,7 +32,7 @@ function Navbar() {
             }`}
           >
             Admin
-          </Link>
+          </Link> */}
         </div>
       </div>
     </nav>

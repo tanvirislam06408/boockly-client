@@ -78,6 +78,10 @@
     animation: fade-in 0.3s ease-out;
   }
 
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out both;
+  }
+
   /* Hide scrollbar on mobile scroll containers */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -91,6 +95,17 @@
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Keyboard focus styles */

@@ -11,7 +11,6 @@ import PopularBooks from '../components/home/PopularBooks'
 import TrendingBooks from '../components/home/TrendingBooks'
 import RecommendedBooks from '../components/home/RecommendedBooks'
 import { useBooks } from '../hooks/useBooks'
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 function Home() {
@@ -22,8 +21,11 @@ function Home() {
     loadingMore,
     error,
     hasMore,
+    totalCount,
+    newBookIds,
     doFetch,
     loadMore,
+    retry,
     setBooks,
   } = useBooks()
 
@@ -50,10 +52,10 @@ function Home() {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Refetch when search or category changes
+  // Refetch when search or category changes (resets to page 1)
   useEffect(() => {
     const topic = activeCategory === 'All' ? '' : activeCategory.toLowerCase()
-    doFetch(appliedSearch, topic, 1, false)
+    doFetch(appliedSearch, topic)
   }, [appliedSearch, activeCategory, doFetch])
 
   // Track recently viewed when book is opened
@@ -80,9 +82,6 @@ function Home() {
         return sorted
     }
   }, [books, sortBy])
-
-  // Infinite scroll sentinel
-  const sentinelRef = useInfiniteScroll(loadMore, { enabled: hasMore && !loading })
 
   // Optimistic rating update
   const handleRate = useCallback((bookId, ratingValue) => {
@@ -139,16 +138,18 @@ function Home() {
           onSortChange={setSortBy}
         />
 
-        {/* Main book grid with infinite scroll */}
+        {/* Main book grid with Load More */}
         <BookGrid
           books={sortedBooks}
           loading={loading}
           loadingMore={loadingMore}
           error={error}
           hasMore={hasMore}
+          totalCount={totalCount}
+          newBookIds={newBookIds}
           onOpenDetails={handleOpenDetails}
-          onLoadMore={() => doFetch(appliedSearch, activeCategory === 'All' ? '' : activeCategory.toLowerCase(), 1, false)}
-          sentinelRef={sentinelRef}
+          onLoadMore={loadMore}
+          onRetry={retry}
         />
       </div>
 
