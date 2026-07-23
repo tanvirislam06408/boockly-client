@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { X, Download, BookOpen, ExternalLink } from 'lucide-react'
+import { X, Download, ExternalLink } from 'lucide-react'
 import RatingStars from './RatingStars'
 import { isReadableFormat } from '../services/api'
+import { saveReadingProgress } from '../services/readingProgress'
 
 function BookDetailsModal({ book, onClose, onRate }) {
   const [ratingState, setRatingState] = useState('idle') // idle | confirming | done
@@ -11,7 +11,6 @@ function BookDetailsModal({ book, onClose, onRate }) {
   const modalRef = useRef(null)
   const closeRef = useRef(null)
   const previousFocus = useRef(null)
-  const navigate = useNavigate()
 
   // Mount/unmount with enter transition
   useEffect(() => {
@@ -91,9 +90,17 @@ function BookDetailsModal({ book, onClose, onRate }) {
   }
 
   function handleReadBook() {
-    if (book.downloadUrl) {
-      navigate(`/reader/${book.id}?url=${encodeURIComponent(book.downloadUrl)}&title=${encodeURIComponent(book.title)}`)
-      onClose()
+    const readUrl = book.readFormat?.url || book.downloadUrl
+    if (readUrl) {
+      // Save to "Continue Reading" with the URL
+      saveReadingProgress(book.id, { percentage: 0 }, {
+        title: book.title,
+        author: book.author,
+        coverImage: book.coverImage,
+        readFormat: book.readFormat?.type || 'unknown',
+        readUrl,
+      })
+      window.open(readUrl, '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -241,7 +248,7 @@ function BookDetailsModal({ book, onClose, onRate }) {
                   onClick={handleReadBook}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-olive-500 hover:bg-olive-600 text-white rounded-lg font-medium transition-colors"
                 >
-                  <BookOpen size={16} />
+                  <ExternalLink size={16} />
                   Read Online
                 </button>
               )}

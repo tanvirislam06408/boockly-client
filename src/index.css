@@ -140,64 +140,6 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* EPUB Reader Styles */
-.epub-container {
-  overflow: hidden;
-  position: relative;
-}
-
-.epub-viewer {
-  width: 100%;
-  height: 100%;
-}
-
-/* Theme-specific styles for epub.js */
-.epub-container[data-theme="light"] {
-  background-color: #FDFBF7;
-}
-
-.epub-container[data-theme="dark"] {
-  background-color: #2C1E10;
-}
-
-.epub-container[data-theme="sepia"] {
-  background-color: #F5EDE3;
-}
-
-/* Navigation buttons */
-.nav-button {
-  @apply p-3 rounded-full shadow-lg transition-all duration-200;
-}
-
-.nav-button:hover {
-  @apply transform scale-105;
-}
-
-.nav-button:active {
-  @apply transform scale-95;
-}
-
-/* Reader controls panel */
-.reader-panel {
-  @apply absolute z-10 p-4 rounded-lg shadow-lg transition-all duration-200;
-}
-
-/* Progress bar animation */
-.progress-bar {
-  @apply transition-all duration-300 ease-out;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .nav-button {
-    @apply p-2;
-  }
-  
-  .reader-panel {
-    @apply text-sm;
-  }
-}
-
 /* Keyboard focus styles */
 .keyboard-focus:focus {
   @apply outline-none ring-2 ring-brand-500/40 ring-offset-2;

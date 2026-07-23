@@ -4,7 +4,7 @@ const STORAGE_KEY = 'boockly_reading_progress'
  * Save reading progress with book metadata.
  * @param {string|number} bookId
  * @param {object} progress - { href, location, percentage, scrollPosition, format }
- * @param {object} [meta] - { title, author, coverImage, readFormat }
+ * @param {object} [meta] - { title, author, coverImage, readFormat, readUrl }
  */
 export function saveReadingProgress(bookId, progress, meta = {}) {
   try {

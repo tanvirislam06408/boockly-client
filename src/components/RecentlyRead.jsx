@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { BookOpen, Clock, ArrowRight } from 'lucide-react'
+import { BookOpen, Clock, ExternalLink } from 'lucide-react'
 import { getLastReadBooks } from '../services/readingProgress'
 
 function RecentlyRead() {
   const [recentBooks, setRecentBooks] = useState([])
-  const navigate = useNavigate()
 
   useEffect(() => {
     const books = getLastReadBooks(5)
@@ -17,8 +15,9 @@ function RecentlyRead() {
   }
 
   function handleContinue(book) {
-    // Navigate to reader — the Reader page will fetch fresh book data by ID
-    navigate(`/reader/${book.bookId}`)
+    if (book.readUrl) {
+      window.open(book.readUrl, '_blank', 'noopener,noreferrer')
+    }
   }
 
   function formatTimeAgo(timestamp) {
@@ -54,7 +53,12 @@ function RecentlyRead() {
             <button
               key={book.bookId}
               onClick={() => handleContinue(book)}
-              className="flex items-center gap-3 p-3 bg-white rounded-lg hover:bg-parchment-100 hover:shadow-card transition-all duration-200 text-left group"
+              disabled={!book.readUrl}
+              className={`flex items-center gap-3 p-3 bg-white rounded-lg transition-all duration-200 text-left group ${
+                book.readUrl
+                  ? 'hover:bg-parchment-100 hover:shadow-card cursor-pointer'
+                  : 'opacity-60 cursor-not-allowed'
+              }`}
             >
               {/* Cover or placeholder */}
               {book.coverImage ? (
@@ -97,7 +101,7 @@ function RecentlyRead() {
                 </div>
               </div>
 
-              <ArrowRight
+              <ExternalLink
                 size={14}
                 className="text-parchment-300 group-hover:text-brand-500 transition-colors shrink-0"
               />
