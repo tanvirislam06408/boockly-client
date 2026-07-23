@@ -1,0 +1,16 @@
+{
+  "name": "Bookly — Free Digital Library",
+  "short_name": "Bookly",
+  "description": "Browse and read thousands of classic books from Project Gutenberg.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF7F0",
+  "theme_color": "#C47225",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

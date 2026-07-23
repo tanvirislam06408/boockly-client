@@ -136,12 +136,7 @@ function AdminUploadForm({ onSubmit, editingBook, onCancelEdit }) {
     formData.append('coverImage', coverFile)
     formData.append('pdf', pdfFile)
 
-    // Stub: log and simulate network delay
-    console.log('Upload FormData:')
-    for (const [key, val] of formData.entries()) {
-      console.log(`  ${key}:`, val instanceof File ? `${val.name} (${val.type})` : val)
-    }
-
+    // Simulate network delay
     await new Promise((r) => setTimeout(r, 1500))
 
     setIsSubmitting(false)

@@ -4,7 +4,6 @@ import Navbar from '../components/layout/Navbar'
 import AdminUploadForm from '../components/AdminUploadForm'
 import AdminBooksTable from '../components/AdminBooksTable'
 import Footer from '../components/layout/Footer'
-import { mockBooks } from '../data/mockBooks'
 
 function AdminGate({ onUnlock }) {
   const [key, setKey] = useState('')
@@ -58,7 +57,7 @@ function AdminGate({ onUnlock }) {
 }
 
 function AdminPanel() {
-  const [books, setBooks] = useState(mockBooks)
+  const [books, setBooks] = useState([])
   const [editingBook, setEditingBook] = useState(null)
 
   function handleUpload(formData, bookId) {
@@ -87,7 +86,6 @@ function AdminPanel() {
     }
 
     setEditingBook(null)
-    console.log('Upload complete:', data)
   }
 
   function handleDelete(bookId) {

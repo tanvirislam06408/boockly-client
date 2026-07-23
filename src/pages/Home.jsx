@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
+import ErrorBoundary from '../components/ErrorBoundary'
 import Hero from '../components/home/Hero'
 import CategoryFilter from '../components/home/CategoryFilter'
 import BookGrid from '../components/home/BookGrid'
@@ -115,15 +116,26 @@ function Home() {
 
       <div className="flex-1">
         {/* Personalized sections */}
-        <ContinueReading />
+        <ErrorBoundary fallbackMessage="Couldn't load your reading history.">
+          <ContinueReading />
+        </ErrorBoundary>
 
         {/* Discovery sections */}
-        <PopularBooks onOpenDetails={handleOpenDetails} />
-        <TrendingBooks onOpenDetails={handleOpenDetails} />
+        <ErrorBoundary fallbackMessage="Couldn't load popular books.">
+          <PopularBooks onOpenDetails={handleOpenDetails} />
+        </ErrorBoundary>
 
-        <RecentlyViewed onOpenDetails={handleOpenDetails} />
+        <ErrorBoundary fallbackMessage="Couldn't load trending books.">
+          <TrendingBooks onOpenDetails={handleOpenDetails} />
+        </ErrorBoundary>
 
-        <RecommendedBooks onOpenDetails={handleOpenDetails} />
+        <ErrorBoundary fallbackMessage="Couldn't load recently viewed books.">
+          <RecentlyViewed onOpenDetails={handleOpenDetails} />
+        </ErrorBoundary>
+
+        <ErrorBoundary fallbackMessage="Couldn't load recommendations.">
+          <RecommendedBooks onOpenDetails={handleOpenDetails} />
+        </ErrorBoundary>
 
         {/* Divider before main grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">

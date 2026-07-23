@@ -1,18 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { fetchBooks, fetchByUrl } from '../services/api'
 
-// Stable mock rating per book ID
-function generateMockRating(bookId) {
-  const hash = ((bookId * 2654435761) >>> 0) % 1000
-  return {
-    rating: Math.round(((hash / 1000) * 4 + 1) * 10) / 10,
-    totalRatings: (hash % 2000) + 50,
-  }
-}
-
-function enrichBook(book) {
-  return { ...book, ...generateMockRating(book.id) }
-}
+const MAX_CACHE_SIZE = 10
 
 // Cache key: "search::topic" → { books, nextUrl, totalCount }
 const pageCache = new Map()
@@ -35,6 +24,14 @@ export function useBooks() {
   const currentSearchRef = useRef('')
   const currentTopicRef = useRef('')
   const abortRef = useRef(null)
+
+  // Evict oldest cache entry when over limit
+  function evictIfNeeded() {
+    if (pageCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = pageCache.keys().next().value
+      pageCache.delete(firstKey)
+    }
+  }
 
   // Initial fetch (page 1) — checks cache first
   const doFetch = useCallback(async (search = '', topic = '') => {
@@ -65,8 +62,7 @@ export function useBooks() {
       const data = await fetchBooks({ search, page: 1, topic })
       if (controller.signal.aborted) return
 
-      const enriched = data.results.map(enrichBook)
-      setBooks(enriched)
+      setBooks(data.results)
       setHasMore(!!data.next)
       setTotalCount(data.count)
       nextUrlRef.current = data.next || null
@@ -74,8 +70,9 @@ export function useBooks() {
       currentTopicRef.current = topic
 
       // Store in cache
+      evictIfNeeded()
       pageCache.set(key, {
-        books: enriched,
+        books: data.results,
         nextUrl: data.next || null,
         totalCount: data.count,
       })
@@ -97,13 +94,12 @@ export function useBooks() {
 
     try {
       const data = await fetchByUrl(nextUrlRef.current)
-      const newBooks = data.results.map(enrichBook)
 
       // Deduplicate and track new IDs
       const addedIds = new Set()
       setBooks((prev) => {
         const existingIds = new Set(prev.map((b) => b.id))
-        const unique = newBooks.filter((b) => {
+        const unique = data.results.filter((b) => {
           if (existingIds.has(b.id)) return false
           addedIds.add(b.id)
           return true

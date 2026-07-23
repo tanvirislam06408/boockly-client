@@ -1,16 +1,8 @@
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { Flame } from 'lucide-react'
 import { fetchTrendingBooks } from '../../services/api'
 import BookSection from './BookSection'
 import BookCard from './BookCard'
-
-function generateMockRating(bookId) {
-  const hash = ((bookId * 2654435761) >>> 0) % 1000
-  return {
-    rating: Math.round(((hash / 1000) * 4 + 1) * 10) / 10,
-    totalRatings: (hash % 2000) + 50,
-  }
-}
 
 const TrendingBooks = memo(function TrendingBooks({ onOpenDetails }) {
   const [books, setBooks] = useState([])
@@ -18,28 +10,23 @@ const TrendingBooks = memo(function TrendingBooks({ onOpenDetails }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      try {
-        const data = await fetchTrendingBooks()
-        if (!cancelled) {
-          setBooks(data.books.map((b) => ({ ...b, ...generateMockRating(b.id) })))
-          setTopic(data.topic)
-          setLoading(false)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message)
-          setLoading(false)
-        }
-      }
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchTrendingBooks()
+      setBooks(data.books)
+      setTopic(data.topic)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    load()
-    return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   return (
     <BookSection
@@ -48,7 +35,7 @@ const TrendingBooks = memo(function TrendingBooks({ onOpenDetails }) {
       icon={Flame}
       loading={loading}
       error={error}
-      onRetry={() => window.location.reload()}
+      onRetry={load}
     >
       <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
         {books.map((book) => (

@@ -5,14 +5,6 @@ import { useLocalStorage } from '../../hooks/useLocalStorage'
 import BookSection from './BookSection'
 import BookCard from './BookCard'
 
-function generateMockRating(bookId) {
-  const hash = ((bookId * 2654435761) >>> 0) % 1000
-  return {
-    rating: Math.round(((hash / 1000) * 4 + 1) * 10) / 10,
-    totalRatings: (hash % 2000) + 50,
-  }
-}
-
 const RecentlyViewed = memo(function RecentlyViewed({ onOpenDetails }) {
   const [viewedIds] = useLocalStorage('boockly_recently_viewed', [])
   const [books, setBooks] = useState([])
@@ -29,7 +21,7 @@ const RecentlyViewed = memo(function RecentlyViewed({ onOpenDetails }) {
       try {
         const data = await fetchBooksByIds(viewedIds.slice(0, 8))
         if (!cancelled) {
-          setBooks(data.map((b) => ({ ...b, ...generateMockRating(b.id) })))
+          setBooks(data)
           setLoading(false)
         }
       } catch (err) {
