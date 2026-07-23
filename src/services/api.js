@@ -67,9 +67,23 @@ function mapBook(result) {
   }
 }
 
-/**
- * Fetch books from Gutendex with optional search, topic, and pagination.
- */
+// ─── Simple TTL cache for section fetches ─────────────────────
+const sectionCache = new Map()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+function getCached(key) {
+  const entry = sectionCache.get(key)
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data
+  sectionCache.delete(key)
+  return null
+}
+
+function setCached(key, data) {
+  sectionCache.set(key, { data, ts: Date.now() })
+}
+
+// ─── Core fetch ───────────────────────────────────────────────
+
 export async function fetchBooks({ search = '', page = 1, topic = '' } = {}) {
   const params = new URLSearchParams()
   if (search) params.append('search', search)
@@ -88,10 +102,6 @@ export async function fetchBooks({ search = '', page = 1, topic = '' } = {}) {
   }
 }
 
-/**
- * Fetch books from any Gutendex URL directly (used for the "next" URL).
- * Returns the same shape as fetchBooks: { count, next, previous, results }.
- */
 export async function fetchByUrl(url) {
   const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to fetch books')
@@ -105,9 +115,6 @@ export async function fetchByUrl(url) {
   }
 }
 
-/**
- * Fetch a single book by ID.
- */
 export async function fetchBookById(bookId) {
   const res = await fetch(`${GUTENDEX_BASE}/${bookId}`)
   if (!res.ok) throw new Error('Failed to fetch book')
@@ -115,52 +122,86 @@ export async function fetchBookById(bookId) {
   return mapBook(data)
 }
 
-/**
- * Fetch books by multiple IDs (for "Recently Viewed" section).
- */
+// ─── Batch fetch with controlled concurrency ──────────────────
+
 export async function fetchBooksByIds(ids) {
   if (!ids.length) return []
-  const results = await Promise.allSettled(
-    ids.slice(0, 10).map((id) => fetchBookById(id))
-  )
-  return results
-    .filter((r) => r.status === 'fulfilled')
-    .map((r) => r.value)
+
+  const uniqueIds = [...new Set(ids)].slice(0, 8)
+
+  // Check cache first
+  const uncachedIds = uniqueIds.filter((id) => !getCached(`book:${id}`))
+  const cached = uniqueIds
+    .filter((id) => getCached(`book:${id}`))
+    .map((id) => getCached(`book:${id}`))
+
+  if (uncachedIds.length === 0) return cached
+
+  // Fetch uncached with controlled concurrency (max 3 parallel)
+  const results = []
+  const CONCURRENCY = 3
+
+  for (let i = 0; i < uncachedIds.length; i += CONCURRENCY) {
+    const batch = uncachedIds.slice(i, i + CONCURRENCY)
+    const batchResults = await Promise.allSettled(
+      batch.map((id) => fetchBookById(id))
+    )
+    for (const r of batchResults) {
+      if (r.status === 'fulfilled') {
+        setCached(`book:${r.value.id}`, r.value)
+        results.push(r.value)
+      }
+    }
+  }
+
+  return [...cached, ...results]
 }
 
-/**
- * Trending topics to fetch for "Trending" section.
- */
+// ─── Section fetches with caching ─────────────────────────────
+
 const TRENDING_TOPICS = ['fiction', 'science', 'philosophy', 'history', 'poetry']
 
 export async function fetchTrendingBooks() {
   const topic = TRENDING_TOPICS[Math.floor(Math.random() * TRENDING_TOPICS.length)]
+  const cacheKey = `trending:${topic}`
+
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
   const res = await fetch(`${GUTENDEX_BASE}?topic=${topic}&page=1`)
   if (!res.ok) throw new Error('Failed to fetch trending books')
   const data = await res.json()
-  return {
+  const result = {
     topic,
     books: data.results.map(mapBook),
   }
+  setCached(cacheKey, result)
+  return result
 }
 
-/**
- * Fetch "Popular" books (page 1 of Gutendex, which is ordered by popularity).
- */
 export async function fetchPopularBooks() {
+  const cacheKey = 'popular'
+
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
   const res = await fetch(`${GUTENDEX_BASE}?page=1`)
   if (!res.ok) throw new Error('Failed to fetch popular books')
   const data = await res.json()
-  return data.results.map(mapBook)
+  const result = data.results.map(mapBook)
+  setCached(cacheKey, result)
+  return result
 }
 
-/**
- * Fetch "Recommended" books from random topic.
- */
 const RECOMMEND_TOPICS = ['literature', 'adventure', 'mystery', 'romance', 'travel', 'nature', 'philosophy', 'biography']
 
 export async function fetchRecommendedBooks() {
-  const shuffled = RECOMMEND_TOPICS.sort(() => Math.random() - 0.5)
+  const cacheKey = 'recommended'
+
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
+  const shuffled = [...RECOMMEND_TOPICS].sort(() => Math.random() - 0.5)
   const topics = shuffled.slice(0, 2)
 
   const results = await Promise.allSettled(
@@ -175,7 +216,6 @@ export async function fetchRecommendedBooks() {
     .filter((r) => r.status === 'fulfilled')
     .flatMap((r) => r.value)
 
-  // Deduplicate by ID and shuffle
   const seen = new Set()
   const unique = books.filter((b) => {
     if (seen.has(b.id)) return false
@@ -183,5 +223,7 @@ export async function fetchRecommendedBooks() {
     return true
   })
 
-  return unique.sort(() => Math.random() - 0.5).slice(0, 10)
+  const result = unique.sort(() => Math.random() - 0.5).slice(0, 10)
+  setCached(cacheKey, result)
+  return result
 }

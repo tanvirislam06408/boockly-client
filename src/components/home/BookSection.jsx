@@ -1,11 +1,11 @@
-import { forwardRef } from 'react'
+import { forwardRef, memo } from 'react'
 import { AlertTriangle, RefreshCw, BookOpen } from 'lucide-react'
 
 /**
  * Reusable section wrapper for book carousels/grids on the homepage.
  * Handles title, loading skeletons, error state, and empty state.
  */
-const BookSection = forwardRef(function BookSection({
+const BookSection = memo(forwardRef(function BookSection({
   title,
   icon: Icon,
   subtitle,
@@ -86,6 +86,6 @@ const BookSection = forwardRef(function BookSection({
       </div>
     </section>
   )
-})
+}))
 
 export default BookSection

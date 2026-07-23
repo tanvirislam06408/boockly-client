@@ -20,6 +20,8 @@ const BookCard = memo(function BookCard({ book, onOpenDetails }) {
             alt={`Cover of ${book.title}`}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
+            width="180"
+            height="270"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-parchment-300/40">

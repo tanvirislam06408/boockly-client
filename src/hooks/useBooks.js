@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { fetchBooks, fetchByUrl } from '../services/api'
 
 const MAX_CACHE_SIZE = 10
@@ -24,6 +24,14 @@ export function useBooks() {
   const currentSearchRef = useRef('')
   const currentTopicRef = useRef('')
   const abortRef = useRef(null)
+  const newBookIdsTimerRef = useRef(null)
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (newBookIdsTimerRef.current) clearTimeout(newBookIdsTimerRef.current)
+    }
+  }, [])
 
   // Evict oldest cache entry when over limit
   function evictIfNeeded() {
@@ -120,7 +128,8 @@ export function useBooks() {
       // Expose new IDs briefly for scroll + animation
       setNewBookIds(addedIds)
       // Clear after animation completes
-      setTimeout(() => setNewBookIds(new Set()), 800)
+      if (newBookIdsTimerRef.current) clearTimeout(newBookIdsTimerRef.current)
+      newBookIdsTimerRef.current = setTimeout(() => setNewBookIds(new Set()), 800)
     } catch (err) {
       setError(err.message || 'Failed to load more books')
     } finally {
