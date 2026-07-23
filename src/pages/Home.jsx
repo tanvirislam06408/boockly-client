@@ -1,148 +1,157 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import Hero from '../components/Hero'
-import CategoryFilter from '../components/CategoryFilter'
-import BookGrid from '../components/BookGrid'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import Navbar from '../components/layout/Navbar'
+import Footer from '../components/layout/Footer'
+import Hero from '../components/home/Hero'
+import CategoryFilter from '../components/home/CategoryFilter'
+import BookGrid from '../components/home/BookGrid'
 import BookDetailsModal from '../components/BookDetailsModal'
-import RecentlyRead from '../components/RecentlyRead'
-import Footer from '../components/Footer'
-import { fetchBooks } from '../services/api'
-
-// Generate a stable mock rating per book ID for visual purposes (not persisted)
-function generateMockRating(bookId) {
-  const hash = ((bookId * 2654435761) >>> 0) % 1000
-  return {
-    rating: Math.round(((hash / 1000) * 4 + 1) * 10) / 10, // 1.0 – 5.0
-    totalRatings: (hash % 2000) + 50,
-  }
-}
+import ContinueReading from '../components/home/ContinueReading'
+import RecentlyViewed from '../components/home/RecentlyViewed'
+import PopularBooks from '../components/home/PopularBooks'
+import TrendingBooks from '../components/home/TrendingBooks'
+import RecommendedBooks from '../components/home/RecommendedBooks'
+import { useBooks } from '../hooks/useBooks'
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 
 function Home() {
-  const [books, setBooks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // Book data from API
+  const {
+    books,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    doFetch,
+    loadMore,
+    setBooks,
+  } = useBooks()
 
-  // Search state
+  // UI state
   const [searchTerm, setSearchTerm] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
-
-  // Category state — maps to Gutendex topic param
   const [activeCategory, setActiveCategory] = useState('All')
-
-  // Modal state
+  const [sortBy, setSortBy] = useState('default')
   const [selectedBook, setSelectedBook] = useState(null)
 
-  // Debounce timer ref
-  const debounceRef = useRef(null)
-
-  // Fetch books from Gutendex
-  const doFetch = useCallback(async (search, page = 1) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchBooks({ search, page })
-      // Attach local mock ratings
-      const withRatings = data.results.map((book) => ({
-        ...book,
-        ...generateMockRating(book.id),
-      }))
-      setBooks(withRatings)
-    } catch (err) {
-      setError(err.message || 'Something went wrong')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  // Recently viewed tracking
+  const [recentlyViewed, setRecentlyViewed] = useLocalStorage('boockly_recently_viewed', [])
 
   // Initial fetch
   useEffect(() => {
     doFetch('')
   }, [doFetch])
 
-  // Debounced search — refetch from API when search changes
+  // Debounced search
   useEffect(() => {
-    clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      doFetch(appliedSearch)
-    }, 400)
-    return () => clearTimeout(debounceRef.current)
-  }, [appliedSearch, doFetch])
+    const timer = setTimeout(() => {
+      setAppliedSearch(searchTerm)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
-  // Category filter — Gutendex topic param
+  // Refetch when search or category changes
   useEffect(() => {
     const topic = activeCategory === 'All' ? '' : activeCategory.toLowerCase()
-    doFetch(topic || appliedSearch)
-  }, [activeCategory, doFetch, appliedSearch])
+    doFetch(appliedSearch, topic, 1, false)
+  }, [appliedSearch, activeCategory, doFetch])
 
-  // Optimistic local rating update
+  // Track recently viewed when book is opened
+  const handleOpenDetails = useCallback((book) => {
+    setSelectedBook(book)
+    setRecentlyViewed((prev) => {
+      const filtered = prev.filter((id) => id !== book.id)
+      return [book.id, ...filtered].slice(0, 20)
+    })
+  }, [setRecentlyViewed])
+
+  // Client-side sorting
+  const sortedBooks = useMemo(() => {
+    if (sortBy === 'default') return books
+    const sorted = [...books]
+    switch (sortBy) {
+      case 'title-asc':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title))
+      case 'title-desc':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title))
+      case 'author-asc':
+        return sorted.sort((a, b) => a.author.localeCompare(b.author))
+      default:
+        return sorted
+    }
+  }, [books, sortBy])
+
+  // Infinite scroll sentinel
+  const sentinelRef = useInfiniteScroll(loadMore, { enabled: hasMore && !loading })
+
+  // Optimistic rating update
   const handleRate = useCallback((bookId, ratingValue) => {
-    setBooks((prev) =>
-      prev.map((book) => {
-        if (book.id !== bookId) return book
-        const newTotalRatings = book.totalRatings + 1
-        const newRating =
-          (book.rating * book.totalRatings + ratingValue) / newTotalRatings
-        return {
-          ...book,
-          rating: Math.round(newRating * 10) / 10,
-          totalRatings: newTotalRatings,
-        }
-      })
-    )
-
-    setSelectedBook((prev) => {
-      if (!prev || prev.id !== bookId) return prev
-      const newTotalRatings = prev.totalRatings + 1
-      const newRating =
-        (prev.rating * prev.totalRatings + ratingValue) / newTotalRatings
+    const updateBook = (book) => {
+      if (book.id !== bookId) return book
+      const newTotalRatings = book.totalRatings + 1
+      const newRating = (book.rating * book.totalRatings + ratingValue) / newTotalRatings
       return {
-        ...prev,
+        ...book,
         rating: Math.round(newRating * 10) / 10,
         totalRatings: newTotalRatings,
       }
+    }
+
+    setBooks((prev) => prev.map(updateBook))
+    setSelectedBook((prev) => {
+      if (!prev || prev.id !== bookId) return prev
+      return updateBook(prev)
     })
-  }, [])
+  }, [setBooks])
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+
       <Hero
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         onSearch={setAppliedSearch}
       />
-      <CategoryFilter
-        activeCategory={activeCategory}
-        onSelect={setActiveCategory}
-      />
+
       <div className="flex-1">
-        <RecentlyRead />
-        {error && !loading ? (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mb-4">
-              <AlertTriangle size={22} className="text-red-400" />
-            </div>
-            <p className="font-display text-lg text-parchment-800 mb-1">
-              Couldn't load books
-            </p>
-            <p className="text-sm text-parchment-600 mb-5">{error}</p>
-            <button
-              onClick={() => doFetch(appliedSearch)}
-              className="btn-primary inline-flex items-center gap-2"
-            >
-              <RefreshCw size={15} />
-              Try again
-            </button>
-          </div>
-        ) : (
-          <BookGrid
-            books={books}
-            loading={loading}
-            onOpenDetails={setSelectedBook}
-          />
-        )}
+        {/* Personalized sections */}
+        <ContinueReading />
+
+        {/* Discovery sections */}
+        <PopularBooks onOpenDetails={handleOpenDetails} />
+        <TrendingBooks onOpenDetails={handleOpenDetails} />
+
+        <RecentlyViewed onOpenDetails={handleOpenDetails} />
+
+        <RecommendedBooks onOpenDetails={handleOpenDetails} />
+
+        {/* Divider before main grid */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+          <div className="border-t border-parchment-300/60" />
+        </div>
+
+        {/* Category filter + Sort */}
+        <CategoryFilter
+          activeCategory={activeCategory}
+          onSelect={setActiveCategory}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+        />
+
+        {/* Main book grid with infinite scroll */}
+        <BookGrid
+          books={sortedBooks}
+          loading={loading}
+          loadingMore={loadingMore}
+          error={error}
+          hasMore={hasMore}
+          onOpenDetails={handleOpenDetails}
+          onLoadMore={() => doFetch(appliedSearch, activeCategory === 'All' ? '' : activeCategory.toLowerCase(), 1, false)}
+          sentinelRef={sentinelRef}
+        />
       </div>
+
       <Footer />
 
       <BookDetailsModal

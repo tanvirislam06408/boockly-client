@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Download } from 'lucide-react'
-import RatingStars from './RatingStars'
+import RatingStars from '../RatingStars'
 
-function BookCard({ book, onOpenDetails }) {
+const BookCard = memo(function BookCard({ book, onOpenDetails }) {
   const hasRating = book.rating > 0
   const hasDownload = !!book.downloadUrl
 
@@ -16,7 +17,7 @@ function BookCard({ book, onOpenDetails }) {
         {book.coverImage ? (
           <img
             src={book.coverImage}
-            alt={book.title}
+            alt={`Cover of ${book.title}`}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />
@@ -26,7 +27,7 @@ function BookCard({ book, onOpenDetails }) {
           </div>
         )}
 
-        {/* Download link — top-right overlay */}
+        {/* Download overlay */}
         {hasDownload ? (
           <a
             href={book.downloadUrl}
@@ -45,7 +46,7 @@ function BookCard({ book, onOpenDetails }) {
           <span
             aria-label="No file available"
             className="absolute top-2 right-2 p-2 rounded-lg bg-parchment-900/30 text-parchment-400
-                       cursor-not-allowed"
+                       cursor-not-allowed opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
             <Download size={15} />
           </span>
@@ -58,7 +59,7 @@ function BookCard({ book, onOpenDetails }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-1.5">
+      <div className="p-3.5 space-y-1">
         <h3 className="font-display font-semibold text-parchment-900 text-sm leading-snug line-clamp-2">
           {book.title}
         </h3>
@@ -67,7 +68,6 @@ function BookCard({ book, onOpenDetails }) {
           {book.author}
         </p>
 
-        {/* Rating row — only if rating exists */}
         {hasRating && (
           <div className="flex items-center gap-1.5 pt-0.5">
             <RatingStars rating={book.rating} size={12} />
@@ -79,6 +79,6 @@ function BookCard({ book, onOpenDetails }) {
       </div>
     </button>
   )
-}
+})
 
 export default BookCard

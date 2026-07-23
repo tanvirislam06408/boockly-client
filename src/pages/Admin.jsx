@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Lock } from 'lucide-react'
-import Navbar from '../components/Navbar'
+import Navbar from '../components/layout/Navbar'
 import AdminUploadForm from '../components/AdminUploadForm'
 import AdminBooksTable from '../components/AdminBooksTable'
-import Footer from '../components/Footer'
+import Footer from '../components/layout/Footer'
 import { mockBooks } from '../data/mockBooks'
 
 function AdminGate({ onUnlock }) {

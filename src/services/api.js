@@ -1,11 +1,3 @@
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-})
-
-export default api
-
 const GUTENDEX_BASE = 'https://gutendex.com/books'
 
 // Format priority for reading (highest to lowest)
@@ -24,13 +16,8 @@ const DOWNLOAD_FORMAT_PRIORITY = [
   'text/plain',
 ]
 
-/**
- * Detect the best reading format from Gutendex formats object.
- * Returns { type: 'html'|'pdf'|'text'|'epub'|null, url: string|null }
- */
 export function getBestReadFormat(formats) {
   if (!formats) return { type: null, url: null }
-
   for (const mime of READ_FORMAT_PRIORITY) {
     if (formats[mime]) {
       if (mime === 'text/html') return { type: 'html', url: formats[mime] }
@@ -38,18 +25,12 @@ export function getBestReadFormat(formats) {
       if (mime.startsWith('text/plain')) return { type: 'text', url: formats[mime] }
     }
   }
-
-  // Fallback: check for EPUB (can't read in browser, offer download)
   if (formats['application/epub+zip']) {
     return { type: 'epub', url: formats['application/epub+zip'] }
   }
-
   return { type: null, url: null }
 }
 
-/**
- * Get the best download URL (prefers EPUB for offline readers).
- */
 function pickDownloadUrl(formats) {
   for (const mime of DOWNLOAD_FORMAT_PRIORITY) {
     if (formats[mime]) return formats[mime]
@@ -57,9 +38,6 @@ function pickDownloadUrl(formats) {
   return null
 }
 
-/**
- * Check if a format is readable in-browser (not just downloadable).
- */
 export function isReadableFormat(formats) {
   if (!formats) return false
   return READ_FORMAT_PRIORITY.some((mime) => !!formats[mime])
@@ -74,8 +52,6 @@ function mapBook(result) {
     ? subjects.join(', ')
     : `A book by ${author}.`
 
-  const readFormat = getBestReadFormat(result.formats || {})
-
   return {
     id: result.id,
     title: result.title,
@@ -84,17 +60,20 @@ function mapBook(result) {
     description,
     coverImage: result.formats?.['image/jpeg'] || null,
     downloadUrl: pickDownloadUrl(result.formats || {}),
-    readFormat,
+    readFormat: getBestReadFormat(result.formats || {}),
     formats: result.formats || {},
-    // Gutendex has no ratings — default to 0/0
     rating: 0,
     totalRatings: 0,
   }
 }
 
-export async function fetchBooks({ search = '', page = 1 } = {}) {
+/**
+ * Fetch books from Gutendex with optional search, topic, and pagination.
+ */
+export async function fetchBooks({ search = '', page = 1, topic = '' } = {}) {
   const params = new URLSearchParams()
   if (search) params.append('search', search)
+  if (topic) params.append('topic', topic)
   params.append('page', page)
 
   const res = await fetch(`${GUTENDEX_BASE}?${params.toString()}`)
@@ -110,11 +89,82 @@ export async function fetchBooks({ search = '', page = 1 } = {}) {
 }
 
 /**
- * Fetch a single book by ID from Gutendex.
+ * Fetch a single book by ID.
  */
 export async function fetchBookById(bookId) {
   const res = await fetch(`${GUTENDEX_BASE}/${bookId}`)
   if (!res.ok) throw new Error('Failed to fetch book')
   const data = await res.json()
   return mapBook(data)
+}
+
+/**
+ * Fetch books by multiple IDs (for "Recently Viewed" section).
+ */
+export async function fetchBooksByIds(ids) {
+  if (!ids.length) return []
+  const results = await Promise.allSettled(
+    ids.slice(0, 10).map((id) => fetchBookById(id))
+  )
+  return results
+    .filter((r) => r.status === 'fulfilled')
+    .map((r) => r.value)
+}
+
+/**
+ * Trending topics to fetch for "Trending" section.
+ */
+const TRENDING_TOPICS = ['fiction', 'science', 'philosophy', 'history', 'poetry']
+
+export async function fetchTrendingBooks() {
+  const topic = TRENDING_TOPICS[Math.floor(Math.random() * TRENDING_TOPICS.length)]
+  const res = await fetch(`${GUTENDEX_BASE}?topic=${topic}&page=1`)
+  if (!res.ok) throw new Error('Failed to fetch trending books')
+  const data = await res.json()
+  return {
+    topic,
+    books: data.results.map(mapBook),
+  }
+}
+
+/**
+ * Fetch "Popular" books (page 1 of Gutendex, which is ordered by popularity).
+ */
+export async function fetchPopularBooks() {
+  const res = await fetch(`${GUTENDEX_BASE}?page=1`)
+  if (!res.ok) throw new Error('Failed to fetch popular books')
+  const data = await res.json()
+  return data.results.map(mapBook)
+}
+
+/**
+ * Fetch "Recommended" books from random topic.
+ */
+const RECOMMEND_TOPICS = ['literature', 'adventure', 'mystery', 'romance', 'travel', 'nature', 'philosophy', 'biography']
+
+export async function fetchRecommendedBooks() {
+  const shuffled = RECOMMEND_TOPICS.sort(() => Math.random() - 0.5)
+  const topics = shuffled.slice(0, 2)
+
+  const results = await Promise.allSettled(
+    topics.map((topic) =>
+      fetch(`${GUTENDEX_BASE}?topic=${topic}&page=1`)
+        .then((r) => r.json())
+        .then((d) => d.results.map(mapBook))
+    )
+  )
+
+  const books = results
+    .filter((r) => r.status === 'fulfilled')
+    .flatMap((r) => r.value)
+
+  // Deduplicate by ID and shuffle
+  const seen = new Set()
+  const unique = books.filter((b) => {
+    if (seen.has(b.id)) return false
+    seen.add(b.id)
+    return true
+  })
+
+  return unique.sort(() => Math.random() - 0.5).slice(0, 10)
 }
